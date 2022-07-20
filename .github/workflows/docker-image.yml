@@ -1,0 +1,67 @@
+name: base-image update check
+on:
+  schedule:
+    - cron: "0 15 * * MON"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        tag: [ "3.10",  "3.10-slim", "3.9",  "3.9-slim" ] # the selected tags from the python image we'll build for
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so job can access it
+      - uses: actions/checkout@v2
+
+      # Check if base image is different SHA from layer of image.
+      - name: Did base image change
+        id: baseupdatecheck
+        uses: lucacome/docker-image-update-checker@v1.1.0
+        with:
+          base-image: library/python:${{ matrix.tag }}
+          image: aperullo/python-dind:${{ matrix.tag }}
+      
+      # If it is, figure out the latest versions of compose and dind
+      - name: Generate build args
+        id: buildargs
+        run: |
+          echo PYTHON_TAG=${{ matrix.tag }} >> $GITHUB_ENV
+          echo COMPOSE_VERSION="$(curl https://api.github.com/repos/docker/compose/releases/latest | jq .tag_name)" >> $GITHUB_ENV
+          echo DIND_COMMIT="$(curl -fsSL 'https://github.com/docker/docker/commits/master/hack/dind.atom' | tac|tac | awk -F '[[:space:]]*[<>/]+' '$2 == "id" && $3 ~ /Commit/ { print $4; exit }')" >> $GITHUB_ENV
+        if: steps.baseupdatecheck.outputs.needs-updating == 'true'
+
+      # build an image based on the current tag, passing the builds args
+      - name: Build docker images
+        uses: docker/build-push-action@v3
+        with:
+          context: "${{ github.workspace }}"
+          load: true
+          tags: aperullo/python-dind:${{ matrix.tag }}
+          build-args: |
+            PYTHON_TAG=${{ env.PYTHON_TAG }}
+            COMPOSE_VERSION=${{ env.COMPOSE_VERSION }}
+            DIND_COMMIT=${{ env.DIND_COMMIT }}
+        if: steps.baseupdatecheck.outputs.needs-updating == 'true'
+        
+        # Mount a docker socket and run the hello-world image to verify docker is working (dind can't be verified in github actions)
+      - name: Test built image
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aperullo/python-dind:${{ matrix.tag }} docker run hello-world
+        if: steps.baseupdatecheck.outputs.needs-updating == 'true'
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: steps.baseupdatecheck.outputs.needs-updating == 'true'
+
+      # if test didn't fail us out of the job, upload the image with the tag its based on.
+      - name: Push docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: aperullo/python-dind:${{ matrix.tag }}
+        if: steps.baseupdatecheck.outputs.needs-updating == 'true'
