@@ -1,6 +1,6 @@
 # python-dind
 
-A python image with docker, dockerd, docker-compose, and dind for use in ci. 
+A python image with docker, dockerd, docker-compose, and dind for use in ci. Find it on [dockerhub](https://hub.docker.com/r/aperullo/python-dind)
 
 Uses/features:
 - With testcontainers-python in a ci
