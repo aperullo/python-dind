@@ -58,10 +58,15 @@ jobs:
         if: steps.baseupdatecheck.outputs.needs-updating == 'true'
 
       # if test didn't fail us out of the job, upload the image with the tag its based on.
+      # Should not increase build time since uses cache. https://github.com/docker/build-push-action/blob/master/docs/advanced/test-before-push.md#:~:text=Build%20time%20will%20not%20be%20increased%20with%20this%20workflow
       - name: Push docker image
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
           tags: aperullo/python-dind:${{ matrix.tag }}
+          build-args: |
+            PYTHON_TAG=${{ env.PYTHON_TAG }}
+            COMPOSE_VERSION=${{ env.COMPOSE_VERSION }}
+            DIND_COMMIT=${{ env.DIND_COMMIT }}
         if: steps.baseupdatecheck.outputs.needs-updating == 'true'
