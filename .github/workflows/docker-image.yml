@@ -47,6 +47,7 @@ jobs:
         # Mount a docker socket and run the hello-world image to verify docker is working (dind can't be verified in github actions)
       - name: Test built image
         run: |
+          echo REF ${{ github.ref_name }}
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aperullo/python-dind:${{ matrix.tag }} docker run hello-world
         if: steps.baseupdatecheck.outputs.needs-updating == 'true'
 
@@ -69,4 +70,4 @@ jobs:
             PYTHON_TAG=${{ env.PYTHON_TAG }}
             COMPOSE_VERSION=${{ env.COMPOSE_VERSION }}
             DIND_COMMIT=${{ env.DIND_COMMIT }}
-        if: steps.baseupdatecheck.outputs.needs-updating == 'true' && github.ref == 'main'
+        if: steps.baseupdatecheck.outputs.needs-updating == 'true' && github.ref_name == 'main'
