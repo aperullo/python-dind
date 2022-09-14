@@ -69,4 +69,4 @@ jobs:
             PYTHON_TAG=${{ env.PYTHON_TAG }}
             COMPOSE_VERSION=${{ env.COMPOSE_VERSION }}
             DIND_COMMIT=${{ env.DIND_COMMIT }}
-        if: steps.baseupdatecheck.outputs.needs-updating == 'true' && github.ref == 'main'
+        if: steps.baseupdatecheck.outputs.needs-updating == 'true' && github.ref_name == 'main'
