@@ -17,7 +17,7 @@ jobs:
       # Check if base image is different SHA from layer of image.
       - name: Did base image change
         id: baseupdatecheck
-        uses: lucacome/docker-image-update-checker@v1.1.0
+        uses: lucacome/docker-image-update-checker@v1.2.0
         with:
           base-image: library/python:${{ matrix.tag }}
           image: aperullo/python-dind:${{ matrix.tag }}
